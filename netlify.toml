@@ -1,0 +1,13 @@
+# This file configures Netlify to handle SPA routing
+# It ensures that all routes are redirected to index.html
+
+[build]
+  publish = "dist"
+  command = "npm run build"
+
+# The following redirect is necessary for single-page applications
+# It ensures that all paths redirect to index.html where the SPA router takes over
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200
