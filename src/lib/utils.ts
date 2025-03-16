@@ -174,14 +174,14 @@ async function identifyCompetitorsWithOpenAI(domain: string): Promise<Competitor
   const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
   
   if (!apiKey) {
-    throw new Error('OpenAI API key not found');
+    console.warn('OpenAI API key not found, using fallback methods');
+    throw new Error('OpenAI API key not configured');
   }
 
   try {
-    // Use the official OpenAI SDK instead of axios for better error handling
     const openai = new OpenAI({
       apiKey,
-      dangerouslyAllowBrowser: true // Required for client-side usage
+      dangerouslyAllowBrowser: true
     });
 
     const response = await openai.chat.completions.create({
@@ -198,7 +198,7 @@ async function identifyCompetitorsWithOpenAI(domain: string): Promise<Competitor
       ],
       temperature: 0.7,
       max_tokens: 1000,
-      response_format: { type: 'json_object' } // Ensure JSON response
+      response_format: { type: 'json_object' }
     });
 
     const content = response.choices[0]?.message?.content;
@@ -208,35 +208,28 @@ async function identifyCompetitorsWithOpenAI(domain: string): Promise<Competitor
     }
 
     try {
-      // Parse the JSON response
       const parsedContent = JSON.parse(content);
       
-      // Check if the response has a competitors array
       if (Array.isArray(parsedContent.competitors)) {
         const competitors = parsedContent.competitors;
         
-        // Validate and normalize the structure of each competitor
         const result = competitors.map((comp: any) => ({
           domain: comp.domain,
           name: comp.name,
           description: comp.description || `Competitor of ${domain}`
         }));
         
-        // Cache the result
         openAICache[domain] = result;
         return result;
       } else if (Array.isArray(parsedContent)) {
-        // If the response is a direct array
         const competitors = parsedContent;
         
-        // Validate and normalize the structure of each competitor
         const result = competitors.map((comp: any) => ({
           domain: comp.domain,
           name: comp.name,
           description: comp.description || `Competitor of ${domain}`
         }));
         
-        // Cache the result
         openAICache[domain] = result;
         return result;
       }
@@ -247,7 +240,6 @@ async function identifyCompetitorsWithOpenAI(domain: string): Promise<Competitor
       throw new Error('Failed to parse competitor data from OpenAI');
     }
   } catch (error) {
-    // Handle rate limiting and other OpenAI errors
     if (error instanceof OpenAI.APIError) {
       console.error('OpenAI API error:', {
         status: error.status,
@@ -258,10 +250,6 @@ async function identifyCompetitorsWithOpenAI(domain: string): Promise<Competitor
       if (error.status === 429) {
         console.error('OpenAI rate limit exceeded. Using fallback methods.');
       }
-    } else if (error instanceof Error) {
-      console.error('OpenAI API error:', error.message);
-    } else {
-      console.error('OpenAI API error: Unknown error');
     }
     throw error;
   }
@@ -281,13 +269,7 @@ export async function identifyCompetitors(domain: string): Promise<CompetitorInf
         return openAICompetitors;
       }
     } catch (openAIError) {
-      // Safe error logging without Symbol() that can't be cloned
-      if (openAIError instanceof Error) {
-        console.error('OpenAI identification failed:', openAIError.message);
-      } else {
-        console.error('OpenAI identification failed: Unknown error');
-      }
-      // Continue to fallback methods if OpenAI fails
+      console.warn('OpenAI identification failed, falling back to pattern matching');
     }
 
     // Then try pattern matching with improved regex
@@ -306,46 +288,7 @@ export async function identifyCompetitors(domain: string): Promise<CompetitorInf
       }
     }
 
-    // If no matches found in our database, try the Clearbit API
-    if (import.meta.env.VITE_CLEARBIT_API_KEY) {
-      try {
-        const response = await axios.get(`https://company.clearbit.com/v2/companies/find?domain=${domain}`, {
-          headers: {
-            'Authorization': `Bearer ${import.meta.env.VITE_CLEARBIT_API_KEY}`
-          }
-        });
-
-        const companyData = response.data;
-        
-        const similarCompaniesResponse = await axios.get(
-          `https://company.clearbit.com/v2/companies/search?query=category:${companyData.category}`,
-          {
-            headers: {
-              'Authorization': `Bearer ${import.meta.env.VITE_CLEARBIT_API_KEY}`
-            }
-          }
-        );
-
-        return similarCompaniesResponse.data.results
-          .filter((company: any) => company.domain !== domain)
-          .slice(0, 5)
-          .map((company: any) => ({
-            domain: company.domain,
-            name: company.name,
-            description: company.description || `${company.name} - ${company.category}`
-          }));
-      } catch (clearbitError) {
-        // Safe error logging without Symbol() that can't be cloned
-        if (clearbitError instanceof Error) {
-          console.error('Clearbit API error:', clearbitError.message);
-        } else {
-          console.error('Clearbit API error: Unknown error');
-        }
-        // Continue to fallback methods
-      }
-    }
-
-    // If all else fails, return a default set of generic competitors
+    // Return a default set of generic competitors
     return [
       {
         domain: 'competitor1.com',
@@ -364,13 +307,7 @@ export async function identifyCompetitors(domain: string): Promise<CompetitorInf
       }
     ];
   } catch (error) {
-    // Safe error logging without Symbol() that can't be cloned
-    if (error instanceof Error) {
-      console.error('Error identifying competitors:', error.message);
-    } else {
-      console.error('Error identifying competitors: Unknown error');
-    }
-    
+    console.error('Error identifying competitors:', error);
     // Return empty array on error
     return [];
   }
