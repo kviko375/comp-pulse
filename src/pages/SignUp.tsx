@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { Mail, Lock, ArrowRight, AlertCircle, Loader2, LogIn, BarChart2, CheckCircle } from 'lucide-react';
-import { isBusinessEmail } from '../lib/utils';
+import { isBusinessEmail, identifyCompetitors } from '../lib/utils';
 import { supabase } from '../lib/supabase';
-import OpenAI from 'openai';
 
 interface SignUpProps {
   isLoginPage?: boolean;
@@ -19,65 +18,18 @@ function SignUp({ isLoginPage }: SignUpProps) {
   const [isLogin, setIsLogin] = useState(isLoginPage || location.state?.isLogin || false);
 
   useEffect(() => {
-    // Update isLogin when isLoginPage prop changes
     if (isLoginPage !== undefined) {
       setIsLogin(isLoginPage);
     }
   }, [isLoginPage]);
 
   useEffect(() => {
-    // Check if user is already logged in
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         navigate('/reports');
       }
     });
   }, [navigate]);
-
-  const identifyCompetitorsWithOpenAI = async (domain: string) => {
-    const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
-    
-    if (!apiKey) {
-      console.warn('OpenAI API key not found');
-      return null;
-    }
-
-    try {
-      const openai = new OpenAI({
-        apiKey,
-        dangerouslyAllowBrowser: true
-      });
-
-      const response = await openai.chat.completions.create({
-        model: 'gpt-3.5-turbo',
-        messages: [
-          {
-            role: 'system',
-            content: 'You are a helpful assistant that identifies business competitors.'
-          },
-          {
-            role: 'user',
-            content: `Identify the top 3-5 competitors for ${domain}. Return ONLY a JSON array of objects with the following structure: [{"domain": "competitor.com", "name": "Competitor Name", "description": "Brief description of what they do"}]. Do not include any explanations or other text.`
-          }
-        ],
-        temperature: 0.7,
-        max_tokens: 1000,
-        response_format: { type: 'json_object' }
-      });
-
-      const content = response.choices[0]?.message?.content;
-      
-      if (!content) {
-        throw new Error('No content returned from OpenAI');
-      }
-
-      const parsedContent = JSON.parse(content);
-      return Array.isArray(parsedContent.competitors) ? parsedContent.competitors : parsedContent;
-    } catch (err) {
-      console.error('OpenAI API error:', err);
-      return null;
-    }
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -108,7 +60,6 @@ function SignUp({ isLoginPage }: SignUpProps) {
         }
 
         if (signInData.user) {
-          // Check if user is admin
           const { data: profile } = await supabase
             .from('profiles')
             .select('is_admin')
@@ -123,13 +74,11 @@ function SignUp({ isLoginPage }: SignUpProps) {
           return;
         }
       } else {
-        // Try to sign up the user
         const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
           email,
           password
         });
 
-        // Handle user already exists error
         if (signUpError) {
           if (signUpError.message.includes('user_already_exists') || signUpError.message.includes('User already registered')) {
             setError('Account already exists. Please log in instead.');
@@ -143,12 +92,27 @@ function SignUp({ isLoginPage }: SignUpProps) {
 
         if (signUpData.user) {
           const isBusinessUser = isBusinessEmail(email);
-          let competitors = null;
+          let competitors = [];
 
           if (isBusinessUser) {
-            // Always make the OpenAI call for business emails
-            const domain = email.split('@')[1];
-            competitors = await identifyCompetitorsWithOpenAI(domain);
+            try {
+              const domain = email.split('@')[1];
+              competitors = await identifyCompetitors(domain);
+              
+              // Check if we got generic competitors
+              const isGeneric = competitors.some(c => 
+                c.domain === 'competitor1.com' || 
+                c.domain === 'competitor2.com' || 
+                c.domain === 'competitor3.com'
+              );
+
+              if (isGeneric) {
+                console.warn('Using generic competitors - OpenAI integration might not be properly configured');
+              }
+            } catch (err) {
+              console.error('Error identifying competitors:', err);
+              // Don't show this error to the user, just continue with signup
+            }
           }
 
           navigate('/setup/competitors', { 
