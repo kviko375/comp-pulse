@@ -27,10 +27,12 @@ function CompetitorSetup() {
         try {
           setLoading(true);
           setError(null);
+          
           const identifiedCompetitors = await identifyCompetitors(website);
           setCompetitors(identifiedCompetitors);
         } catch (err) {
           setError('Failed to identify competitors. You can add them manually.');
+          console.error('Error identifying competitors:', err);
         } finally {
           setLoading(false);
         }
@@ -46,7 +48,7 @@ function CompetitorSetup() {
     if (newCompetitor && !competitors.some(c => c.domain === newCompetitor)) {
       setCompetitors([...competitors, {
         domain: newCompetitor,
-        name: newCompetitor.split('.')[0],
+        name: newCompetitor.split('.')[0].charAt(0).toUpperCase() + newCompetitor.split('.')[0].slice(1),
         description: 'Custom added competitor'
       }]);
       setNewCompetitor('');
@@ -86,6 +88,7 @@ function CompetitorSetup() {
       });
     } catch (err) {
       setError('Failed to save competitors. Please try again.');
+      console.error('Save error:', err);
     } finally {
       setSaving(false);
     }

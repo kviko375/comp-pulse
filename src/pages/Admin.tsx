@@ -3,6 +3,7 @@ import { Loader2, Search, Trash2, Upload, AlertCircle, ShieldAlert, Mail } from 
 import { adminClient } from '../lib/adminClient';
 import { supabase } from '../lib/supabase';
 import { useNavigate } from 'react-router-dom';
+import mammoth from 'mammoth';
 
 interface User {
   id: string;
@@ -130,11 +131,11 @@ function Admin() {
     }
   };
 
-  const handleUpload = async (e: React.ChangeEvent<HTMLFormElement>) => {
+  const handleUpload = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedUser) return;
 
-    const formData = new FormData(e.target);
+    const formData = new FormData(e.target as HTMLFormElement);
     const file = formData.get('report') as File;
     const title = formData.get('title') as string;
     const reportDate = formData.get('reportDate') as string;
@@ -148,41 +149,129 @@ function Admin() {
       setUploading(true);
       setError(null);
 
-      const fileName = `${selectedUser.id}/${reportDate}-${file.name}`;
-      
-      // Upload file to storage
-      const { error: storageError } = await adminClient.storage
+      // Check if a report already exists for this date
+      const { data: existingReport, error: checkError } = await adminClient
         .from('reports')
-        .upload(fileName, file, {
-          contentType: 'text/html',
-          upsert: true
-        });
+        .select('id, title')
+        .eq('user_id', selectedUser.id)
+        .eq('report_date', reportDate)
+        .maybeSingle();
 
-      if (storageError) {
-        throw storageError;
+      if (checkError) {
+        throw checkError;
       }
 
-      // Create record in reports table
-      const { error: reportError } = await adminClient
-        .from('reports')
-        .upsert({
-          user_id: selectedUser.id,
-          title,
-          storage_path: fileName,
-          report_date: reportDate,
-          notified: false
+      if (existingReport) {
+        const confirmOverwrite = window.confirm(
+          `A report titled "${existingReport.title}" already exists for this date. Would you like to overwrite it?`
+        );
+
+        if (!confirmOverwrite) {
+          return;
+        }
+
+        // Delete the existing report and its storage file
+        const { error: storageDeleteError } = await adminClient.storage
+          .from('reports')
+          .remove([existingReport.storage_path]);
+
+        if (storageDeleteError) {
+          throw storageDeleteError;
+        }
+
+        const { error: reportDeleteError } = await adminClient
+          .from('reports')
+          .delete()
+          .eq('id', existingReport.id);
+
+        if (reportDeleteError) {
+          throw reportDeleteError;
+        }
+      }
+
+      let htmlContent: string;
+      const fileName = `${selectedUser.id}/${reportDate}-${file.name}`;
+
+      // Convert DOCX to HTML if the file is a DOCX
+      if (file.name.toLowerCase().endsWith('.docx')) {
+        const arrayBuffer = await file.arrayBuffer();
+        const result = await mammoth.convertToHtml({ arrayBuffer });
+        
+        // Add target="_blank" to all links in the converted HTML
+        htmlContent = result.value.replace(
+          /<a\s+(?![^>]*\btarget=)[^>]*>/gi,
+          (match) => match.slice(0, -1) + ' target="_blank" rel="noopener noreferrer">'
+        );
+
+        // Create a new HTML file with the converted content
+        const htmlFileName = fileName.replace(/\.docx$/i, '.html');
+        const htmlFile = new File([htmlContent], htmlFileName.split('/').pop() || 'report.html', {
+          type: 'text/html'
         });
 
-      if (reportError) {
-        throw reportError;
+        // Upload HTML file to storage
+        const { error: storageError } = await adminClient.storage
+          .from('reports')
+          .upload(htmlFileName, htmlFile, {
+            contentType: 'text/html',
+            upsert: true
+          });
+
+        if (storageError) {
+          throw storageError;
+        }
+
+        // Create record in reports table with HTML file path
+        const { error: reportError } = await adminClient
+          .from('reports')
+          .insert({
+            user_id: selectedUser.id,
+            title,
+            storage_path: htmlFileName,
+            report_date: reportDate,
+            notified: false
+          });
+
+        if (reportError) {
+          throw reportError;
+        }
+      } else if (file.name.toLowerCase().endsWith('.html')) {
+        // Handle HTML files directly
+        const { error: storageError } = await adminClient.storage
+          .from('reports')
+          .upload(fileName, file, {
+            contentType: 'text/html',
+            upsert: true
+          });
+
+        if (storageError) {
+          throw storageError;
+        }
+
+        // Create record in reports table
+        const { error: reportError } = await adminClient
+          .from('reports')
+          .insert({
+            user_id: selectedUser.id,
+            title,
+            storage_path: fileName,
+            report_date: reportDate,
+            notified: false
+          });
+
+        if (reportError) {
+          throw reportError;
+        }
+      } else {
+        throw new Error('Unsupported file format. Please upload HTML or DOCX files only.');
       }
 
       // Reset form and reload reports
-      e.target.reset();
+      (e.target as HTMLFormElement).reset();
       await loadUserReports();
     } catch (err) {
-      setError('Failed to upload report');
       console.error('Upload error:', err);
+      setError(err instanceof Error ? err.message : 'Failed to upload report');
     } finally {
       setUploading(false);
     }
@@ -232,7 +321,7 @@ function Admin() {
       setSendingNotification(report.id);
       setError(null);
 
-      // Call the function to send email notification
+      // Call the function using adminClient instead of regular supabase client
       const { data, error: functionError } = await adminClient.functions.invoke('send-report-notification', {
         body: {
           reportId: report.id,
@@ -392,7 +481,7 @@ function Admin() {
                   </div>
                   <div>
                     <label htmlFor="report" className="block text-sm font-medium text-gray-700">
-                      HTML Report
+                      Report File (HTML or DOCX)
                     </label>
                     <input
                       type="file"
@@ -400,7 +489,7 @@ function Admin() {
                       id="report"
                       ref={fileInputRef}
                       required
-                      accept=".html"
+                      accept=".html,.docx"
                       className="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-medium file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
                     />
                   </div>

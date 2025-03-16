@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useParams } from 'react-router-dom';
 import { supabase } from './lib/supabase';
 import SignUp from './pages/SignUp';
 import CompetitorSetup from './pages/CompetitorSetup';
 import PreferencesSetup from './pages/PreferencesSetup';
 import Dashboard from './pages/Dashboard';
 import Reports from './pages/Reports';
+import ReportViewer from './pages/ReportViewer';
+import PublicReportViewer from './pages/PublicReportViewer';
 import Admin from './pages/Admin';
 import Navigation from './components/Navigation';
 import LandingPage from './pages/LandingPage';
@@ -53,6 +55,7 @@ function App() {
         <Route path="/login" element={<SignUp isLoginPage={true} />} />
         <Route path="/signup" element={<SignUp isLoginPage={false} />} />
         <Route path="/admin" element={<Admin />} />
+        <Route path="/public/reports/:reportId" element={<PublicReportViewer />} />
         <Route
           path="/setup/competitors"
           element={
@@ -85,6 +88,16 @@ function App() {
             <PrivateRoute>
               <AppLayout>
                 <Reports />
+              </AppLayout>
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/reports/:reportId"
+          element={
+            <PrivateRoute>
+              <AppLayout>
+                <ReportViewer />
               </AppLayout>
             </PrivateRoute>
           }

@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { Mail, Lock, ArrowRight, AlertCircle, Loader2, LogIn, BarChart2, CheckCircle } from 'lucide-react';
 import { isBusinessEmail } from '../lib/utils';
 import { supabase } from '../lib/supabase';
+import OpenAI from 'openai';
 
 interface SignUpProps {
   isLoginPage?: boolean;
@@ -32,6 +33,51 @@ function SignUp({ isLoginPage }: SignUpProps) {
       }
     });
   }, [navigate]);
+
+  const identifyCompetitorsWithOpenAI = async (domain: string) => {
+    const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
+    
+    if (!apiKey) {
+      console.warn('OpenAI API key not found');
+      return null;
+    }
+
+    try {
+      const openai = new OpenAI({
+        apiKey,
+        dangerouslyAllowBrowser: true
+      });
+
+      const response = await openai.chat.completions.create({
+        model: 'gpt-3.5-turbo',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a helpful assistant that identifies business competitors.'
+          },
+          {
+            role: 'user',
+            content: `Identify the top 3-5 competitors for ${domain}. Return ONLY a JSON array of objects with the following structure: [{"domain": "competitor.com", "name": "Competitor Name", "description": "Brief description of what they do"}]. Do not include any explanations or other text.`
+          }
+        ],
+        temperature: 0.7,
+        max_tokens: 1000,
+        response_format: { type: 'json_object' }
+      });
+
+      const content = response.choices[0]?.message?.content;
+      
+      if (!content) {
+        throw new Error('No content returned from OpenAI');
+      }
+
+      const parsedContent = JSON.parse(content);
+      return Array.isArray(parsedContent.competitors) ? parsedContent.competitors : parsedContent;
+    } catch (err) {
+      console.error('OpenAI API error:', err);
+      return null;
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -85,7 +131,7 @@ function SignUp({ isLoginPage }: SignUpProps) {
 
         // Handle user already exists error
         if (signUpError) {
-          if (signUpError.message.includes('user_already_exists')) {
+          if (signUpError.message.includes('user_already_exists') || signUpError.message.includes('User already registered')) {
             setError('Account already exists. Please log in instead.');
             setIsLogin(true);
             setLoading(false);
@@ -96,10 +142,20 @@ function SignUp({ isLoginPage }: SignUpProps) {
         }
 
         if (signUpData.user) {
+          const isBusinessUser = isBusinessEmail(email);
+          let competitors = null;
+
+          if (isBusinessUser) {
+            // Always make the OpenAI call for business emails
+            const domain = email.split('@')[1];
+            competitors = await identifyCompetitorsWithOpenAI(domain);
+          }
+
           navigate('/setup/competitors', { 
             state: { 
               email,
-              isBusinessEmail: isBusinessEmail(email)
+              isBusinessEmail: isBusinessUser,
+              savedCompetitors: competitors
             } 
           });
         }
@@ -107,7 +163,7 @@ function SignUp({ isLoginPage }: SignUpProps) {
     } catch (err) {
       console.error('Auth error:', err);
       if (err instanceof Error) {
-        if (err.message.includes('user_already_exists')) {
+        if (err.message.includes('user_already_exists') || err.message.includes('User already registered')) {
           setError('Account already exists. Please log in instead.');
           setIsLogin(true);
         } else if (err.message.includes('invalid_credentials')) {

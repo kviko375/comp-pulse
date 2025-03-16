@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Plus, X, AlertCircle, Loader2, Check } from 'lucide-react';
 import { identifyCompetitors } from '../lib/utils';
@@ -30,6 +30,7 @@ function Dashboard() {
   const [error, setError] = useState<string | null>(null);
   const [settings, setSettings] = useState<UserSettings | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
+  const [identifyingCompetitor, setIdentifyingCompetitor] = useState(false);
 
   // Check for changes whenever the editable fields change
   useEffect(() => {
@@ -73,7 +74,7 @@ function Dashboard() {
           
           const competitorsList = userSettings.competitors.map((domain: string) => ({
             domain,
-            name: domain.split('.')[0],
+            name: domain.split('.')[0].charAt(0).toUpperCase() + domain.split('.')[0].slice(1),
             description: 'Tracked competitor'
           }));
           setCompetitors(competitorsList);
@@ -90,14 +91,51 @@ function Dashboard() {
     loadSettings();
   }, [navigate]);
 
-  const handleAddCompetitor = () => {
-    if (newCompetitor && !competitors.some(c => c.domain === newCompetitor)) {
-      setCompetitors([...competitors, {
-        domain: newCompetitor,
-        name: newCompetitor.split('.')[0],
-        description: 'Custom added competitor'
-      }]);
-      setNewCompetitor('');
+  const handleAddCompetitor = async () => {
+    if (!newCompetitor) return;
+    
+    if (!competitors.some(c => c.domain === newCompetitor)) {
+      try {
+        setIdentifyingCompetitor(true);
+        
+        // Check if it's a valid domain format
+        if (!/^[a-zA-Z0-9][a-zA-Z0-9-]{1,61}[a-zA-Z0-9]\.[a-zA-Z]{2,}$/.test(newCompetitor)) {
+          // If not a valid domain, just add it as is
+          setCompetitors([...competitors, {
+            domain: newCompetitor,
+            name: newCompetitor.split('.')[0].charAt(0).toUpperCase() + newCompetitor.split('.')[0].slice(1),
+            description: 'Custom added competitor'
+          }]);
+        } else {
+          // Try to get more info about this competitor using our database
+          const competitorInfo = await identifyCompetitors(newCompetitor);
+          
+          // If we got info about this specific competitor, use it
+          const matchedCompetitor = competitorInfo.find(c => c.domain === newCompetitor);
+          
+          if (matchedCompetitor) {
+            setCompetitors([...competitors, matchedCompetitor]);
+          } else {
+            // Otherwise just add with basic info
+            setCompetitors([...competitors, {
+              domain: newCompetitor,
+              name: newCompetitor.split('.')[0].charAt(0).toUpperCase() + newCompetitor.split('.')[0].slice(1),
+              description: 'Custom added competitor'
+            }]);
+          }
+        }
+      } catch (err) {
+        console.error('Error adding competitor:', err);
+        // Add with basic info if there's an error
+        setCompetitors([...competitors, {
+          domain: newCompetitor,
+          name: newCompetitor.split('.')[0].charAt(0).toUpperCase() + newCompetitor.split('.')[0].slice(1),
+          description: 'Custom added competitor'
+        }]);
+      } finally {
+        setNewCompetitor('');
+        setIdentifyingCompetitor(false);
+      }
     }
   };
 
@@ -212,6 +250,9 @@ function Dashboard() {
                   <div>
                     <h3 className="text-sm font-medium text-gray-900">{competitor.name}</h3>
                     <p className="text-sm text-gray-500">{competitor.domain}</p>
+                    {competitor.description && (
+                      <p className="text-xs text-gray-400 mt-1">{competitor.description}</p>
+                    )}
                   </div>
                   <button
                     onClick={() => handleRemoveCompetitor(competitor.domain)}
@@ -229,12 +270,18 @@ function Dashboard() {
                   placeholder="Add competitor domain"
                   value={newCompetitor}
                   onChange={(e) => setNewCompetitor(e.target.value)}
+                  disabled={identifyingCompetitor}
                 />
                 <button
                   onClick={handleAddCompetitor}
-                  className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-r-md text-white bg-[#4a86ff] hover:bg-[#3a76ef]"
+                  disabled={identifyingCompetitor}
+                  className="inline-flex items-center px-3 py-2 border border-gray-300 text-sm font-medium rounded-r-md text-white bg-[#4a86ff] hover:bg-[#3a76ef] disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <Plus className="h-4 w-4" />
+                  {identifyingCompetitor ? (
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Plus className="h-4 w-4" />
+                  )}
                 </button>
               </div>
             </div>
