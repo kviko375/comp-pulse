@@ -558,7 +558,7 @@ function ReportViewer() {
         ${forPdf ? '' : `
           </div>
           <div class="footer">
-            <p>© ${new Date().getFullYear()} CompetitivePulse. All rights reserved. <a href="${window.location.origin}">Visit CompetitivePulse!</a></p>
+            <p>© ${new Date().getFullYear()} CompetitivePulse. All rights reserved. <a href="${window.location.origin}">Visit CompetitivePulse!2</a></p>
           </div>
         </div>
         `}
