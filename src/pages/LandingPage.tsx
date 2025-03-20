@@ -135,7 +135,7 @@ function LandingPage() {
               Who uses CompetitivePulse?
             </p>
             <p className="max-w-xl mt-5 mx-auto text-xl text-gray-500">
-              Trusted by decision-makers at SaaS Companies, VC Firms & Private Equity, and Agencies & Consultants
+              Built for decision-makers at SaaS Companies, VC Firms & Private Equity, and Agencies & Consultants.
             </p>
           </div>
 

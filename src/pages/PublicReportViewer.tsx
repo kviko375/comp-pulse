@@ -141,10 +141,10 @@ function PublicReportViewer() {
           <div className="flex items-center justify-center mb-8">
             <button 
               onClick={goToLanding}
-              className="flex items-center text-[#4a86ff] hover:text-[#3a76ef]"
+              className="flex items-center"
             >
-              <BarChart2 className="h-8 w-8" />
-              <span className="ml-2 text-2xl font-bold">CompetitivePulse</span>
+              <BarChart2 className="h-8 w-8 text-[#4a86ff]" />
+              <span className="ml-2 text-xl font-bold text-gray-900">CompetitivePulse</span>
             </button>
           </div>
           
@@ -178,10 +178,10 @@ function PublicReportViewer() {
         <div className="flex items-center justify-between mb-6">
           <button 
             onClick={goToLanding}
-            className="flex items-center text-[#4a86ff] hover:text-[#3a76ef]"
+            className="flex items-center"
           >
-            <BarChart2 className="h-8 w-8" />
-            <span className="ml-2 text-2xl font-bold">CompetitivePulse</span>
+            <BarChart2 className="h-8 w-8 text-[#4a86ff]" />
+            <span className="ml-2 text-xl font-bold text-gray-900">CompetitivePulse</span>
           </button>
           
           <button
