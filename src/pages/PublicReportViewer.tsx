@@ -68,6 +68,31 @@ function PublicReportViewer() {
             }
           });
         </script>
+        <style>
+          * {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+          }
+          body {
+            line-height: 1.5;
+            color: #374151;
+          }
+          h1, h2, h3, h4, h5, h6 {
+            color: #111827;
+            font-weight: 600;
+            line-height: 1.25;
+          }
+          h1 { font-size: 2rem; font-weight: 800; }
+          h2 { font-size: 1.5rem; font-weight: 700; }
+          h3 { font-size: 1.25rem; }
+          h4 { font-size: 1.125rem; }
+          h5, h6 { font-size: 1rem; }
+          p { line-height: 1.625; }
+          a { color: #4a86ff; text-decoration: none; }
+          a:hover { color: #3a76ef; }
+          code {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+          }
+        </style>
         </head>`
       );
 
@@ -144,7 +169,7 @@ function PublicReportViewer() {
               className="flex items-center"
             >
               <BarChart2 className="h-8 w-8 text-[#4a86ff]" />
-              <span className="ml-2 text-xl font-bold text-gray-900">CompetitivePulse</span>
+              <span className="ml-2 text-2xl font-bold text-gray-900">CompetitivePulse</span>
             </button>
           </div>
           
@@ -181,7 +206,7 @@ function PublicReportViewer() {
             className="flex items-center"
           >
             <BarChart2 className="h-8 w-8 text-[#4a86ff]" />
-            <span className="ml-2 text-xl font-bold text-gray-900">CompetitivePulse</span>
+            <span className="ml-2 text-2xl font-bold text-gray-900">CompetitivePulse</span>
           </button>
           
           <button
@@ -209,7 +234,7 @@ function PublicReportViewer() {
               srcDoc={reportContent}
               title={reportTitle}
               className="w-full h-[calc(100vh-120px)] border-none"
-              sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox allow-top-navigation"
+              sandbox="allow-scripts allow-popups allow-popups-to-escape-sandbox"
             />
           </div>
         ) : (

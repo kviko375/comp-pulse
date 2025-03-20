@@ -335,10 +335,6 @@ function Reports() {
             </svg>
             <span>CompetitivePulse</span>
           </div>
-          <div class="report-info">
-            <h1 class="report-title">${title}</h1>
-            <p class="report-date">Generated on ${formattedDate}</p>
-          </div>
         </div>
         ` : `
         <div class="container">
@@ -352,10 +348,6 @@ function Reports() {
               </svg>
               <span>CompetitivePulse</span>
             </a>
-          </div>
-          <div class="report-info">
-            <h1 class="report-title">${title}</h1>
-            <p class="report-date">Generated on ${formattedDate}</p>
           </div>
           <div class="report-content">
         `}
