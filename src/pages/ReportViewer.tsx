@@ -213,7 +213,7 @@ function ReportViewer() {
       }
 
       const content = await data.text();
-      const brandedContent = createBrandedTemplate(content, report.title, report.report_date);
+      const brandedContent = createBrandedTemplate(content, report.title, report.report_date, true);
       
       // Create a temporary container for the content
       const container = document.createElement('div');
@@ -277,20 +277,13 @@ function ReportViewer() {
     }
   };
 
-  const createBrandedTemplate = (content: string, title: string, date: string) => {
+  const createBrandedTemplate = (content: string, title: string, date: string, forPdf = false) => {
     // Extract the body content from the original HTML if it exists
     let bodyContent = content;
     const bodyMatch = content.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
     if (bodyMatch && bodyMatch[1]) {
       bodyContent = bodyMatch[1];
     }
-
-    // Format the date for the header
-    const generatedDate = new Date().toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
 
     return `
       <!DOCTYPE html>
@@ -300,17 +293,174 @@ function ReportViewer() {
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>${title} - CompetitivePulse</title>
         <style>
-          * {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+          @font-face {
+            font-family: 'System Font';
+            src: local("-apple-system"), local("BlinkMacSystemFont"), local("Segoe UI"),
+                 local("Roboto"), local("Helvetica Neue"), local("Arial"), local("Noto Sans"),
+                 local("Liberation Sans"), local("sans-serif");
           }
+          
+          * {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif;
+          }
+          
           body {
             line-height: 1.5;
-            color: #374151;
+            color: #333;
             margin: 0;
             padding: 0;
+            background-color: #f9fafb;
+          }
+          .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            background-color: white;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            overflow: hidden;
+          }
+          .header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 24px;
+            background-color: #4a86ff;
+            color: white;
+          }
+          .logo {
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+            color: white;
+            font-weight: bold;
+          }
+          .logo svg {
+            margin-right: 8px;
+          }
+          .report-content {
+            padding: 24px;
+          }
+          .footer {
+            padding: 16px 24px;
+            background-color: #f8fafc;
+            border-top: 1px solid #e5e7eb;
+            text-align: center;
+            font-size: 0.875rem;
+            color: #6b7280;
+          }
+          .footer a {
+            color: #4a86ff;
+            text-decoration: none;
+          }
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5em 0;
+            page-break-inside: avoid;
+          }
+          th, td {
+            padding: 8px 12px;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+          }
+          th {
+            background-color: #f8fafc;
+            font-weight: 600;
+          }
+          img {
+            max-width: 100%;
+            height: auto;
+            margin: 1.5em 0;
+            page-break-inside: avoid;
+          }
+          /* Enhanced heading styles for PDF */
+          h1, h2, h3, h4, h5, h6 {
+            page-break-after: avoid;
+            break-after: avoid;
+            page-break-inside: avoid;
+            break-inside: avoid;
+            margin-top: 2em;
+            margin-bottom: 1em;
+            color: #111827;
+            line-height: 1.2;
+          }
+          
+          /* Keep content with its heading */
+          h1 + *,
+          h2 + *,
+          h3 + *,
+          h4 + *,
+          h5 + *,
+          h6 + * {
+            page-break-before: avoid;
+            break-before: avoid;
+          }
+          
+          h1 {
+            font-size: 2em;
+            font-weight: 800;
+          }
+          h2 {
+            font-size: 1.5em;
+            font-weight: 700;
+          }
+          h3 {
+            font-size: 1.25em;
+            font-weight: 600;
+          }
+          h4 {
+            font-size: 1.125em;
+            font-weight: 600;
+          }
+          h5, h6 {
+            font-size: 1em;
+            font-weight: 600;
+          }
+          p {
+            margin: 1em 0;
+            line-height: 1.6;
+            orphans: 3;
+            widows: 3;
+          }
+          a {
+            color: #4a86ff;
+            text-decoration: none;
+          }
+          code {
+            background-color: #f1f5f9;
+            padding: 0.2em 0.4em;
+            border-radius: 3px;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            font-size: 0.9em;
+          }
+          pre {
+            background-color: #f1f5f9;
+            padding: 1em;
+            border-radius: 5px;
+            overflow-x: auto;
+            margin: 1.5em 0;
+            font-size: 0.9em;
+            page-break-inside: avoid;
+            break-inside: avoid;
+          }
+          blockquote {
+            border-left: 4px solid #e5e7eb;
+            margin: 1.5em 0;
+            padding: 0.5em 0 0.5em 1em;
+            color: #6b7280;
+            font-style: italic;
+            page-break-inside: avoid;
+            break-inside: avoid;
+          }
+          ul, ol {
+            padding-left: 1.5em;
+            margin: 1em 0;
+          }
+          li {
+            margin-bottom: 0.5em;
           }
           .print-header {
-            display: flex;
+            display: ${forPdf ? 'flex' : 'none'};
             align-items: center;
             justify-content: space-between;
             padding: 16px 24px;
@@ -330,68 +480,52 @@ function ReportViewer() {
           .print-logo svg {
             margin-right: 8px;
           }
-          .print-date {
-            color: #6b7280;
-            font-size: 0.875rem;
-          }
-          h1, h2, h3, h4, h5, h6 {
-            page-break-after: avoid;
-            break-after: avoid;
-            page-break-inside: avoid;
-            break-inside: avoid;
-            margin-top: 2em;
-            margin-bottom: 1em;
-            color: #111827;
-            line-height: 1.2;
-          }
-          h1 { font-size: 2rem; font-weight: 800; }
-          h2 { font-size: 1.5rem; font-weight: 700; }
-          h3 { font-size: 1.25rem; }
-          h4 { font-size: 1.125rem; }
-          h5, h6 { font-size: 1rem; }
-          p {
-            margin: 1em 0;
-            line-height: 1.6;
-            orphans: 3;
-            widows: 3;
-          }
-          a { color: #4a86ff; text-decoration: none; }
-          code {
-            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
-          }
-          table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 1.5em 0;
-            page-break-inside: avoid;
-          }
-          th, td {
-            padding: 8px 12px;
-            text-align: left;
-            border-bottom: 1px solid #e5e7eb;
-          }
-          img {
-            max-width: 100%;
-            height: auto;
-            margin: 1.5em 0;
-            page-break-inside: avoid;
-          }
+          /* Print-specific styles */
           @media print {
-            body { background: white; }
+            * {
+              font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", "Liberation Sans", sans-serif !important;
+            }
+            body {
+              background: white;
+              color: black;
+            }
             h1, h2, h3, h4, h5, h6 {
               page-break-after: avoid !important;
               break-after: avoid !important;
               page-break-inside: avoid !important;
               break-inside: avoid !important;
+              color: black;
+            }
+            /* Remove default page break for all H2s */
+            h2 {
+              page-break-before: auto !important;
+              break-before: auto !important;
+            }
+            h1 + *,
+            h2 + *,
+            h3 + *,
+            h4 + *,
+            h5 + *,
+            h6 + * {
+              page-break-before: avoid !important;
+              break-before: avoid !important;
             }
             img, table, figure, pre, blockquote {
               page-break-inside: avoid !important;
               break-inside: avoid !important;
             }
+            p {
+              orphans: 3;
+              widows: 3;
+            }
+            pre, code {
+              font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace !important;
+            }
           }
         </style>
       </head>
       <body>
+        ${forPdf ? `
         <div class="print-header">
           <div class="print-logo">
             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4a86ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -402,9 +536,18 @@ function ReportViewer() {
             </svg>
             <span>CompetitivePulse</span>
           </div>
-          <div class="print-date">Generated on ${generatedDate}</div>
         </div>
+        ` : `
+        <div class="container">
+          <div class="report-content">
+        `}
+        
         ${bodyContent}
+        
+        ${forPdf ? '' : `
+          </div>
+        </div>
+        `}
       </body>
       </html>
     `;
