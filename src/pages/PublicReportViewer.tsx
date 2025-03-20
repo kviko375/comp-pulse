@@ -117,6 +117,13 @@ function PublicReportViewer() {
       bodyContent = bodyMatch[1];
     }
 
+    // Format the current date
+    const generatedDate = new Date().toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+
     return `
       <!DOCTYPE html>
       <html lang="en">
@@ -154,6 +161,10 @@ function PublicReportViewer() {
           }
           .print-logo svg {
             margin-right: 8px;
+          }
+          .print-date {
+            color: #6b7280;
+            font-size: 0.875rem;
           }
           h1, h2, h3, h4, h5, h6 {
             page-break-after: avoid;
@@ -233,6 +244,9 @@ function PublicReportViewer() {
               <path d="M8 17v-3"></path>
             </svg>
             <span>CompetitivePulse</span>
+          </div>
+          <div class="print-date">
+            Generated on ${generatedDate}
           </div>
         </div>
         ${bodyContent}
@@ -328,7 +342,7 @@ function PublicReportViewer() {
               className="flex items-center"
             >
               <BarChart2 className="h-8 w-8 text-[#4a86ff]" />
-              <span className="ml-2 text-xl font-bold text-gray-900">CompetitivePulse</span>
+              <span className="ml-2 text-2xl font-bold text-gray-900">CompetitivePulse</span>
             </button>
           </div>
           
@@ -365,7 +379,7 @@ function PublicReportViewer() {
             className="flex items-center"
           >
             <BarChart2 className="h-8 w-8 text-[#4a86ff]" />
-            <span className="ml-2 text-xl font-bold text-gray-900">CompetitivePulse</span>
+            <span className="ml-2 text-2xl font-bold text-gray-900">CompetitivePulse</span>
           </button>
           
           <button
