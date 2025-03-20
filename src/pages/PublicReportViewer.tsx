@@ -109,6 +109,138 @@ function PublicReportViewer() {
     }
   };
 
+  const createBrandedTemplate = (content: string, title: string, date: string) => {
+    // Extract the body content from the original HTML if it exists
+    let bodyContent = content;
+    const bodyMatch = content.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+    if (bodyMatch && bodyMatch[1]) {
+      bodyContent = bodyMatch[1];
+    }
+
+    return `
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>${title} - CompetitivePulse</title>
+        <style>
+          * {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+          }
+          body {
+            line-height: 1.5;
+            color: #333;
+            margin: 0;
+            padding: 0;
+          }
+          .print-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 24px;
+            border-bottom: 1px solid #e5e7eb;
+            margin-bottom: 2em;
+            page-break-after: avoid;
+            break-after: avoid;
+          }
+          .print-logo {
+            display: flex;
+            align-items: center;
+            text-decoration: none;
+            color: #111827;
+            font-weight: bold;
+            font-size: 1.25rem;
+          }
+          .print-logo svg {
+            margin-right: 8px;
+          }
+          h1, h2, h3, h4, h5, h6 {
+            page-break-after: avoid;
+            break-after: avoid;
+            page-break-inside: avoid;
+            break-inside: avoid;
+            margin-top: 2em;
+            margin-bottom: 1em;
+            color: #111827;
+            line-height: 1.2;
+          }
+          h1 { font-size: 2rem; font-weight: 800; }
+          h2 { font-size: 1.5rem; font-weight: 700; }
+          h3 { font-size: 1.25rem; font-weight: 600; }
+          h4 { font-size: 1.125rem; font-weight: 600; }
+          h5, h6 { font-size: 1rem; font-weight: 600; }
+          p {
+            margin: 1em 0;
+            line-height: 1.6;
+            orphans: 3;
+            widows: 3;
+          }
+          table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5em 0;
+            page-break-inside: avoid;
+          }
+          th, td {
+            padding: 8px 12px;
+            text-align: left;
+            border-bottom: 1px solid #e5e7eb;
+          }
+          th {
+            background-color: #f8fafc;
+            font-weight: 600;
+          }
+          img {
+            max-width: 100%;
+            height: auto;
+            margin: 1.5em 0;
+            page-break-inside: avoid;
+          }
+          code {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+          }
+          @media print {
+            body {
+              background: white;
+              color: black;
+            }
+            h1, h2, h3, h4, h5, h6 {
+              page-break-after: avoid !important;
+              break-after: avoid !important;
+              page-break-inside: avoid !important;
+              break-inside: avoid !important;
+              color: black;
+            }
+            h2 {
+              page-break-before: auto !important;
+              break-before: auto !important;
+            }
+            img, table, figure, pre, blockquote {
+              page-break-inside: avoid !important;
+              break-inside: avoid !important;
+            }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="print-header">
+          <div class="print-logo">
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4a86ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 3v18h18"></path>
+              <path d="M13 17V9"></path>
+              <path d="M18 17V5"></path>
+              <path d="M8 17v-3"></path>
+            </svg>
+            <span>CompetitivePulse</span>
+          </div>
+        </div>
+        ${bodyContent}
+      </body>
+      </html>
+    `;
+  };
+
   const handleDownload = async () => {
     if (!reportContent) return;
     
@@ -116,19 +248,46 @@ function PublicReportViewer() {
       setDownloadingPdf(true);
       setError(null);
       
+      // Create branded content with header
+      const brandedContent = createBrandedTemplate(reportContent, reportTitle, reportDate);
+      
       // Create a temporary container for the content
       const container = document.createElement('div');
-      container.innerHTML = reportContent;
+      container.innerHTML = brandedContent;
+
+      // Add page breaks before h2 elements, excluding the first one
+      const h2Elements = container.querySelectorAll('h2');
+      h2Elements.forEach((h2, index) => {
+        if (index > 0) {
+          h2.style.pageBreakBefore = 'always';
+          h2.style.breakBefore = 'page';
+        }
+      });
+
       document.body.appendChild(container);
       
       // Configure PDF options
       const options = {
-        margin: [10, 10, 10, 10],
+        margin: [15, 15, 15, 15],
         filename: `${reportTitle}-${reportDate || new Date().toISOString().split('T')[0]}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+        html2canvas: { 
+          scale: 2,
+          useCORS: true,
+          letterRendering: true
+        },
+        jsPDF: { 
+          unit: 'mm', 
+          format: 'a4', 
+          orientation: 'portrait',
+          compress: true
+        },
+        pagebreak: { 
+          mode: ['avoid-all', 'css', 'legacy'],
+          before: '.page-break-before',
+          after: '.page-break-after',
+          avoid: ['h1', 'h3', 'h4', 'h5', 'h6', 'img', 'table', 'figure', 'pre', 'blockquote']
+        }
       };
       
       // Generate PDF
@@ -169,7 +328,7 @@ function PublicReportViewer() {
               className="flex items-center"
             >
               <BarChart2 className="h-8 w-8 text-[#4a86ff]" />
-              <span className="ml-2 text-2xl font-bold text-gray-900">CompetitivePulse</span>
+              <span className="ml-2 text-xl font-bold text-gray-900">CompetitivePulse</span>
             </button>
           </div>
           
@@ -206,7 +365,7 @@ function PublicReportViewer() {
             className="flex items-center"
           >
             <BarChart2 className="h-8 w-8 text-[#4a86ff]" />
-            <span className="ml-2 text-2xl font-bold text-gray-900">CompetitivePulse</span>
+            <span className="ml-2 text-xl font-bold text-gray-900">CompetitivePulse</span>
           </button>
           
           <button
