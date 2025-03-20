@@ -213,7 +213,7 @@ function ReportViewer() {
       }
 
       const content = await data.text();
-      const brandedContent = createBrandedTemplate(content, report.title, report.report_date, true);
+      const brandedContent = createBrandedTemplate(content, report.title, report.report_date);
       
       // Create a temporary container for the content
       const container = document.createElement('div');
@@ -222,7 +222,7 @@ function ReportViewer() {
       // Add page breaks before h2 elements, excluding the first one
       const h2Elements = container.querySelectorAll('h2');
       h2Elements.forEach((h2, index) => {
-        if (index > 0) {
+        if (index > 0) { // Skip the first h2
           h2.style.pageBreakBefore = 'always';
           h2.style.breakBefore = 'page';
         }
@@ -230,9 +230,9 @@ function ReportViewer() {
 
       document.body.appendChild(container);
       
-      // Configure PDF options
+      // Configure PDF options with enhanced page break handling
       const options = {
-        margin: [15, 15, 15, 15],
+        margin: [15, 15, 15, 15], // Slightly larger margins for better readability
         filename: `${report.title}-${report.report_date}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: { 
@@ -277,7 +277,7 @@ function ReportViewer() {
     }
   };
 
-  const createBrandedTemplate = (content: string, title: string, date: string, forPdf = false) => {
+  const createBrandedTemplate = (content: string, title: string, date: string) => {
     // Extract the body content from the original HTML if it exists
     let bodyContent = content;
     const bodyMatch = content.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
@@ -285,7 +285,7 @@ function ReportViewer() {
       bodyContent = bodyMatch[1];
     }
 
-    // Format the current date
+    // Format the date for the header
     const generatedDate = new Date().toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
@@ -305,7 +305,7 @@ function ReportViewer() {
           }
           body {
             line-height: 1.5;
-            color: #333;
+            color: #374151;
             margin: 0;
             padding: 0;
           }
@@ -346,14 +346,18 @@ function ReportViewer() {
           }
           h1 { font-size: 2rem; font-weight: 800; }
           h2 { font-size: 1.5rem; font-weight: 700; }
-          h3 { font-size: 1.25rem; font-weight: 600; }
-          h4 { font-size: 1.125rem; font-weight: 600; }
-          h5, h6 { font-size: 1rem; font-weight: 600; }
+          h3 { font-size: 1.25rem; }
+          h4 { font-size: 1.125rem; }
+          h5, h6 { font-size: 1rem; }
           p {
             margin: 1em 0;
             line-height: 1.6;
             orphans: 3;
             widows: 3;
+          }
+          a { color: #4a86ff; text-decoration: none; }
+          code {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
           }
           table {
             width: 100%;
@@ -366,34 +370,19 @@ function ReportViewer() {
             text-align: left;
             border-bottom: 1px solid #e5e7eb;
           }
-          th {
-            background-color: #f8fafc;
-            font-weight: 600;
-          }
           img {
             max-width: 100%;
             height: auto;
             margin: 1.5em 0;
             page-break-inside: avoid;
           }
-          code {
-            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
-          }
           @media print {
-            body {
-              background: white;
-              color: black;
-            }
+            body { background: white; }
             h1, h2, h3, h4, h5, h6 {
               page-break-after: avoid !important;
               break-after: avoid !important;
               page-break-inside: avoid !important;
               break-inside: avoid !important;
-              color: black;
-            }
-            h2 {
-              page-break-before: auto !important;
-              break-before: auto !important;
             }
             img, table, figure, pre, blockquote {
               page-break-inside: avoid !important;
@@ -413,9 +402,7 @@ function ReportViewer() {
             </svg>
             <span>CompetitivePulse</span>
           </div>
-          <div class="print-date">
-            Generated on ${generatedDate}
-          </div>
+          <div class="print-date">Generated on ${generatedDate}</div>
         </div>
         ${bodyContent}
       </body>
