@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1200" height="630" viewBox="0 0 1200 630" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f0f7ff" />
+      <stop offset="100%" stop-color="#e6f0ff" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bgGradient)"/>
+  
+  <!-- Abstract shapes -->
+  <circle cx="300" cy="200" r="120" fill="#4a86ff" opacity="0.7"/>
+  <circle cx="900" cy="440" r="160" fill="#3a76ef" opacity="0.6"/>
+  <circle cx="800" cy="160" r="80" fill="#2a66df" opacity="0.5"/>
+  <circle cx="200" cy="500" r="100" fill="#1a56cf" opacity="0.4"/>
+  
+  <!-- Lines connecting elements -->
+  <path d="M300,200 L800,160" stroke="#4a86ff" stroke-width="4" opacity="0.6"/>
+  <path d="M300,200 L200,500" stroke="#4a86ff" stroke-width="4" opacity="0.6"/>
+  <path d="M800,160 L900,440" stroke="#4a86ff" stroke-width="4" opacity="0.6"/>
+  <path d="M200,500 L900,440" stroke="#4a86ff" stroke-width="4" opacity="0.6"/>
+  
+  <!-- Data points -->
+  <circle cx="300" cy="200" r="12" fill="#ffffff"/>
+  <circle cx="800" cy="160" r="12" fill="#ffffff"/>
+  <circle cx="200" cy="500" r="12" fill="#ffffff"/>
+  <circle cx="900" cy="440" r="12" fill="#ffffff"/>
+  
+  <!-- Logo and text -->
+  <g transform="translate(400,250)">
+    <path d="M3 3v18h18" stroke="#4a86ff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" transform="scale(2)"/>
+    <path d="M13 17V9" stroke="#4a86ff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" transform="scale(2)"/>
+    <path d="M18 17V5" stroke="#4a86ff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" transform="scale(2)"/>
+    <path d="M8 17v-3" stroke="#4a86ff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" transform="scale(2)"/>
+  </g>
+  
+  <!-- Text -->
+  <text x="600" y="400" font-family="system-ui, -apple-system, sans-serif" font-size="48" font-weight="bold" fill="#111827" text-anchor="middle">CompetitivePulse</text>
+  <text x="600" y="460" font-family="system-ui, -apple-system, sans-serif" font-size="24" fill="#6b7280" text-anchor="middle">AI-Powered Competitive Intelligence</text>
+</svg>
