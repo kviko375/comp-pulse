@@ -324,7 +324,7 @@ function PublicReportViewer() {
               className="flex items-center"
             >
               <BarChart2 className="h-8 w-8 text-[#4a86ff]" />
-              <span className="ml-2 text-2xl font-bold text-gray-900">CompetitivePulse</span>
+              <span className="ml-2 text-xl font-bold text-gray-900">CompetitivePulse</span>
             </button>
           </div>
           
@@ -361,7 +361,7 @@ function PublicReportViewer() {
             className="flex items-center"
           >
             <BarChart2 className="h-8 w-8 text-[#4a86ff]" />
-            <span className="ml-2 text-2xl font-bold text-gray-900">CompetitivePulse</span>
+            <span className="ml-2 text-xl font-bold text-gray-900">CompetitivePulse</span>
           </button>
           
           <button
