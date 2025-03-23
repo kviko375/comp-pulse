@@ -285,6 +285,13 @@ function ReportViewer() {
       bodyContent = bodyMatch[1];
     }
 
+    // Format the generation date
+    const generatedDate = new Date().toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+
     return `
       <!DOCTYPE html>
       <html lang="en">
@@ -480,6 +487,10 @@ function ReportViewer() {
           .print-logo svg {
             margin-right: 8px;
           }
+          .print-date {
+            color: #6b7280;
+            font-size: 0.875rem;
+          }
           /* Print-specific styles */
           @media print {
             * {
@@ -536,6 +547,7 @@ function ReportViewer() {
             </svg>
             <span>CompetitivePulse</span>
           </div>
+          <div class="print-date">Generated on ${generatedDate}</div>
         </div>
         ` : `
         <div class="container">
