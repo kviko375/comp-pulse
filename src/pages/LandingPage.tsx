@@ -130,12 +130,12 @@ function LandingPage() {
       <div className="bg-gray-50 py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
-            <h2 className="text-base font-semibold text-[#4a86ff] tracking-wide uppercase">Built for leaders</h2>
+            <h2 className="text-base font-semibold text-[#4a86ff] tracking-wide uppercase">Designed for SaaS Leaders</h2>
             <p className="mt-1 text-4xl font-extrabold text-gray-900 sm:text-5xl sm:tracking-tight">
-              Who uses CompetitivePulse?
+              Empower your decision making
             </p>
             <p className="max-w-xl mt-5 mx-auto text-xl text-gray-500">
-              Built for decision-makers at SaaS Companies.
+              Purpose-built for SaaS leaders who need real-time competitive intelligence to drive strategic growth.
             </p>
           </div>
 
