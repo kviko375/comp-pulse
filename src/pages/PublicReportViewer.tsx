@@ -194,6 +194,10 @@ function PublicReportViewer() {
               orphans: 3;
               widows: 3;
             }
+            a {
+              color: #4a86ff !important;
+              text-decoration: none;
+            }
             table {
               width: 100%;
               border-collapse: collapse;
@@ -222,6 +226,10 @@ function PublicReportViewer() {
               img, table, figure, pre, blockquote {
                 page-break-inside: avoid !important;
                 break-inside: avoid !important;
+              }
+              a {
+                color: #4a86ff !important;
+                text-decoration: none;
               }
             }
           </style>
