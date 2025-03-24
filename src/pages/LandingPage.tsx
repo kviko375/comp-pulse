@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { 
   BarChart2, ArrowRight, CheckCircle, Zap, LineChart, Users, 
   UserPlus, Globe, MessageSquare, Handshake, DollarSign,
-  Crown, Target, PieChart, TrendingUp
+  Crown, Target, TrendingUp
 } from 'lucide-react';
 
 function LandingPage() {
@@ -135,13 +135,13 @@ function LandingPage() {
               Who uses CompetitivePulse?
             </p>
             <p className="max-w-xl mt-5 mx-auto text-xl text-gray-500">
-              Built for decision-makers at SaaS Companies, VC Firms & Private Equity, and Agencies & Consultants.
+              Built for decision-makers at SaaS Companies.
             </p>
           </div>
 
           <div className="mt-16">
             {/* Leaders & Decision Makers */}
-            <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
               <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200 hover:border-[#4a86ff] transition-colors">
                 <div className="flex items-center justify-center h-12 w-12 rounded-md bg-[#4a86ff] text-white mb-4">
                   <Crown className="h-6 w-6" />
@@ -169,16 +169,6 @@ function LandingPage() {
                 <h3 className="text-lg font-medium text-gray-900">Product Managers</h3>
                 <p className="mt-2 text-base text-gray-500">
                   Stay informed about feature launches and product updates from competitors.
-                </p>
-              </div>
-
-              <div className="bg-white rounded-lg shadow-sm p-6 border border-gray-200 hover:border-[#4a86ff] transition-colors">
-                <div className="flex items-center justify-center h-12 w-12 rounded-md bg-[#4a86ff] text-white mb-4">
-                  <PieChart className="h-6 w-6" />
-                </div>
-                <h3 className="text-lg font-medium text-gray-900">Investors & Analysts</h3>
-                <p className="mt-2 text-base text-gray-500">
-                  Monitor market trends and competitive landscapes for better investment decisions.
                 </p>
               </div>
             </div>

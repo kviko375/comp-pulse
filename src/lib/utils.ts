@@ -1,6 +1,6 @@
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import OpenAI from 'openai';
+import axios from 'axios';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -25,89 +25,86 @@ export interface CompetitorInfo {
   description: string;
 }
 
-// Cache for OpenAI responses to avoid repeated API calls
-const openAICache: Record<string, CompetitorInfo[]> = {};
+// Cache for Perplexity AI responses to avoid repeated API calls
+const perplexityCache: Record<string, CompetitorInfo[]> = {};
 
 export async function identifyCompetitors(domain: string): Promise<CompetitorInfo[]> {
-  // Check cache first
-  if (openAICache[domain]) {
-    return openAICache[domain];
-  }
-  
-  const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
-  
-  if (!apiKey) {
-    console.warn('OpenAI API key not found');
+  // Input validation
+  if (!domain || typeof domain !== 'string') {
+    console.error('Invalid domain provided');
     return [];
   }
 
+  // Check cache first
+  if (perplexityCache[domain]) {
+    return perplexityCache[domain];
+  }
+
   try {
-    const openai = new OpenAI({
-      apiKey,
-      dangerouslyAllowBrowser: true
-    });
-
-    const response = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo',
-      messages: [
-        {
-          role: 'system',
-          content: 'You are a helpful assistant that identifies business competitors.'
-        },
-        {
-          role: 'user',
-          content: `Identify the top 3-5 players in the space of ${domain}. Return ONLY a JSON array of objects with the following structure: [{"domain": "competitor.com", "name": "Competitor Name", "description": "Brief description of what they do"}]. Do not include any explanations or other text.`
+    const response = await axios.post(
+      'https://api.perplexity.ai/chat/completions',
+      {
+        model: 'sonar',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are a helpful assistant that identifies business competitors. Respond only with a JSON array.'
+          },
+          {
+            role: 'user',
+            content: `List the top 3-5 competitors of https://${domain} as a JSON array. Each competitor should have: domain, name, and description fields. Example format: [{"domain":"competitor.com","name":"Competitor Inc","description":"Brief description"}]`
+          }
+        ]
+      },
+      {
+        headers: {
+          'Authorization': `Bearer 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`,
+          'Content-Type': 'application/json'
         }
-      ],
-      temperature: 0.7,
-      max_tokens: 1000,
-      response_format: { type: 'json_object' }
-    });
+      }
+    );
 
-    const content = response.choices[0]?.message?.content;
-    
+    const content = response.data?.choices?.[0]?.message?.content;
+
     if (!content) {
+      console.warn('Empty response from Perplexity API');
+      return [];
+    }
+
+    // Extract JSON array from response, handling potential text wrapping
+    const jsonMatch = content.match(/\[.*\]/s);
+    if (!jsonMatch) {
+      console.warn('No JSON array found in response');
       return [];
     }
 
     try {
-      const parsedContent = JSON.parse(content);
-      
-      if (Array.isArray(parsedContent.competitors)) {
-        const competitors = parsedContent.competitors;
-        
-        const result = competitors.map((comp: any) => ({
-          domain: comp.domain,
-          name: comp.name,
-          description: comp.description || `Competitor of ${domain}`
-        }));
-        
-        openAICache[domain] = result;
-        return result;
-      } else if (Array.isArray(parsedContent)) {
-        const competitors = parsedContent;
-        
-        const result = competitors.map((comp: any) => ({
-          domain: comp.domain,
-          name: comp.name,
-          description: comp.description || `Competitor of ${domain}`
-        }));
-        
-        openAICache[domain] = result;
-        return result;
+      const competitors = JSON.parse(jsonMatch[0]);
+
+      if (!Array.isArray(competitors)) {
+        console.warn('Parsed content is not an array');
+        return [];
       }
-      
-      return [];
+
+      const result = competitors.map(comp => ({
+        domain: typeof comp.domain === 'string' ? comp.domain : `${comp.name?.toLowerCase().replace(/[^a-z0-9]/g, '')}.com`,
+        name: typeof comp.name === 'string' ? comp.name : comp.domain?.split('.')[0] || 'Unknown',
+        description: typeof comp.description === 'string' ? comp.description : `Competitor of ${domain}`
+      }));
+
+      // Cache the result
+      perplexityCache[domain] = result;
+      return result;
     } catch (parseError) {
-      console.error('Failed to parse OpenAI response:', parseError);
+      console.error('Failed to parse Perplexity response:', parseError);
       return [];
     }
   } catch (error) {
-    if (error instanceof OpenAI.APIError) {
-      console.error('OpenAI API error:', {
-        status: error.status,
+    if (axios.isAxiosError(error)) {
+      console.error('Perplexity API error:', {
+        status: error.response?.status,
         message: error.message,
-        type: error.type
+        data: error.response?.data
       });
     } else {
       console.error('Error identifying competitors:', error);
