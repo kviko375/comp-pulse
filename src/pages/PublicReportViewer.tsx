@@ -116,21 +116,137 @@ function PublicReportViewer() {
       setDownloadingPdf(true);
       setError(null);
       
-      const brandedContent = createBrandedTemplate(reportContent, reportTitle, reportDate);
+      // Extract the body content from the original HTML if it exists
+      let bodyContent = reportContent;
+      const bodyMatch = reportContent.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+      if (bodyMatch && bodyMatch[1]) {
+        bodyContent = bodyMatch[1];
+      }
+
+      // Format the date for the header
+      const generatedDate = new Date().toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+
+      // Create the PDF template with only one header
+      const pdfContent = `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>${reportTitle} - CompetitivePulse</title>
+          <style>
+            * {
+              font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
+            }
+            body {
+              line-height: 1.5;
+              color: #374151;
+              margin: 0;
+              padding: 0;
+            }
+            .print-header {
+              display: flex;
+              align-items: center;
+              justify-content: space-between;
+              padding: 16px 24px;
+              border-bottom: 1px solid #e5e7eb;
+              margin-bottom: 2em;
+              page-break-after: avoid;
+              break-after: avoid;
+            }
+            .print-logo {
+              display: flex;
+              align-items: center;
+              text-decoration: none;
+              color: #111827;
+              font-weight: bold;
+              font-size: 1.25rem;
+            }
+            .print-logo svg {
+              margin-right: 8px;
+            }
+            .print-date {
+              color: #6b7280;
+              font-size: 0.875rem;
+            }
+            h1, h2, h3, h4, h5, h6 {
+              page-break-after: avoid;
+              break-after: avoid;
+              page-break-inside: avoid;
+              break-inside: avoid;
+              margin-top: 2em;
+              margin-bottom: 1em;
+              color: #111827;
+              line-height: 1.2;
+            }
+            h1 { font-size: 2rem; font-weight: 800; }
+            h2 { font-size: 1.5rem; font-weight: 700; }
+            h3 { font-size: 1.25rem; }
+            h4 { font-size: 1.125rem; }
+            h5, h6 { font-size: 1rem; }
+            p {
+              margin: 1em 0;
+              line-height: 1.6;
+              orphans: 3;
+              widows: 3;
+            }
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              margin: 1.5em 0;
+              page-break-inside: avoid;
+            }
+            th, td {
+              padding: 8px 12px;
+              text-align: left;
+              border-bottom: 1px solid #e5e7eb;
+            }
+            img {
+              max-width: 100%;
+              height: auto;
+              margin: 1.5em 0;
+              page-break-inside: avoid;
+            }
+            @media print {
+              body { background: white; }
+              h1, h2, h3, h4, h5, h6 {
+                page-break-after: avoid !important;
+                break-after: avoid !important;
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+              }
+              img, table, figure, pre, blockquote {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="print-header">
+            <div class="print-logo">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4a86ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 3v18h18"></path>
+                <path d="M13 17V9"></path>
+                <path d="M18 17V5"></path>
+                <path d="M8 17v-3"></path>
+              </svg>
+              <span>CompetitivePulse</span>
+            </div>
+            <div class="print-date">Generated on ${generatedDate}</div>
+          </div>
+          ${bodyContent}
+        </body>
+        </html>
+      `;
       
       // Create a temporary container for the content
       const container = document.createElement('div');
-      container.innerHTML = brandedContent;
-
-      // Add page breaks before h2 elements, excluding the first one
-      const h2Elements = container.querySelectorAll('h2');
-      h2Elements.forEach((h2, index) => {
-        if (index > 0) {
-          h2.style.pageBreakBefore = 'always';
-          h2.style.breakBefore = 'page';
-        }
-      });
-
+      container.innerHTML = pdfContent;
       document.body.appendChild(container);
       
       // Configure PDF options
@@ -168,139 +284,6 @@ function PublicReportViewer() {
     } finally {
       setDownloadingPdf(false);
     }
-  };
-
-  const createBrandedTemplate = (content: string, title: string, date: string) => {
-    // Extract the body content from the original HTML if it exists
-    let bodyContent = content;
-    const bodyMatch = content.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
-    if (bodyMatch && bodyMatch[1]) {
-      bodyContent = bodyMatch[1];
-    }
-
-    // Format the date for the header
-    const generatedDate = new Date().toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-
-    return `
-      <!DOCTYPE html>
-      <html lang="en">
-      <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>${title} - CompetitivePulse</title>
-        <style>
-          * {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
-          }
-          body {
-            line-height: 1.5;
-            color: #374151;
-            margin: 0;
-            padding: 0;
-          }
-          .print-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 16px 24px;
-            border-bottom: 1px solid #e5e7eb;
-            margin-bottom: 2em;
-            page-break-after: avoid;
-            break-after: avoid;
-          }
-          .print-logo {
-            display: flex;
-            align-items: center;
-            text-decoration: none;
-            color: #111827;
-            font-weight: bold;
-            font-size: 1.25rem;
-          }
-          .print-logo svg {
-            margin-right: 8px;
-          }
-          .print-date {
-            color: #6b7280;
-            font-size: 0.875rem;
-          }
-          h1, h2, h3, h4, h5, h6 {
-            page-break-after: avoid;
-            break-after: avoid;
-            page-break-inside: avoid;
-            break-inside: avoid;
-            margin-top: 2em;
-            margin-bottom: 1em;
-            color: #111827;
-            line-height: 1.2;
-          }
-          h1 { font-size: 2rem; font-weight: 800; }
-          h2 { font-size: 1.5rem; font-weight: 700; }
-          h3 { font-size: 1.25rem; }
-          h4 { font-size: 1.125rem; }
-          h5, h6 { font-size: 1rem; }
-          p {
-            margin: 1em 0;
-            line-height: 1.6;
-            orphans: 3;
-            widows: 3;
-          }
-          a { color: #4a86ff; text-decoration: none; }
-          code {
-            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
-          }
-          table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 1.5em 0;
-            page-break-inside: avoid;
-          }
-          th, td {
-            padding: 8px 12px;
-            text-align: left;
-            border-bottom: 1px solid #e5e7eb;
-          }
-          img {
-            max-width: 100%;
-            height: auto;
-            margin: 1.5em 0;
-            page-break-inside: avoid;
-          }
-          @media print {
-            body { background: white; }
-            h1, h2, h3, h4, h5, h6 {
-              page-break-after: avoid !important;
-              break-after: avoid !important;
-              page-break-inside: avoid !important;
-              break-inside: avoid !important;
-            }
-            img, table, figure, pre, blockquote {
-              page-break-inside: avoid !important;
-              break-inside: avoid !important;
-            }
-          }
-        </style>
-      </head>
-      <body>
-        <div class="print-header">
-          <div class="print-logo">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4a86ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M3 3v18h18"></path>
-              <path d="M13 17V9"></path>
-              <path d="M18 17V5"></path>
-              <path d="M8 17v-3"></path>
-            </svg>
-            <span>CompetitivePulse</span>
-          </div>
-          <div class="print-date">Generated on ${generatedDate}</div>
-        </div>
-        ${bodyContent}
-      </body>
-      </html>
-    `;
   };
 
   if (loading) {
