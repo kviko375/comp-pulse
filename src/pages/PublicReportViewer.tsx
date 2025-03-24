@@ -120,7 +120,8 @@ function PublicReportViewer() {
       let bodyContent = reportContent;
       const bodyMatch = reportContent.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
       if (bodyMatch && bodyMatch[1]) {
-        bodyContent = bodyMatch[1];
+        // Remove any existing print-header from the content
+        bodyContent = bodyMatch[1].replace(/<div class="print-header".*?<\/div>/s, '');
       }
 
       // Format the date for the header
