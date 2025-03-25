@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Calendar, FileText, Download, Loader2, ArrowLeft, Share2, Copy, Check, Link, ExternalLink, AlertCircle, Info } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import html2pdf from 'html2pdf.js';
+import { createBrandedTemplate } from '../lib/reportStyles';
 
 interface Report {
   id: string;
@@ -50,191 +51,6 @@ function Reports() {
       console.error('Reports error:', err);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const createBrandedTemplate = (content: string, title: string, date: string, forPdf = false) => {
-    // Extract the body content from the original HTML if it exists
-    let bodyContent = content;
-    const bodyMatch = content.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
-    if (bodyMatch && bodyMatch[1]) {
-      bodyContent = bodyMatch[1];
-    }
-
-    // Format the date for the header
-    const generatedDate = new Date().toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-
-    return `
-      <!DOCTYPE html>
-      <html lang="en">
-      <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>${title} - CompetitivePulse</title>
-        <style>
-          * {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif !important;
-          }
-          body {
-            line-height: 1.5;
-            color: #374151;
-            margin: 0;
-            padding: 0;
-          }
-          .print-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 16px 24px;
-            border-bottom: 1px solid #e5e7eb;
-            margin-bottom: 2em;
-            page-break-after: avoid;
-            break-after: avoid;
-          }
-          .print-logo {
-            display: flex;
-            align-items: center;
-            text-decoration: none;
-            color: #111827;
-            font-weight: bold;
-            font-size: 1.25rem;
-          }
-          .print-logo svg {
-            margin-right: 8px;
-          }
-          .print-date {
-            color: #6b7280;
-            font-size: 0.875rem;
-          }
-          h1, h2, h3, h4, h5, h6 {
-            page-break-after: avoid;
-            break-after: avoid;
-            page-break-inside: avoid;
-            break-inside: avoid;
-            margin-top: 2em;
-            margin-bottom: 1em;
-            color: #111827;
-            line-height: 1.2;
-          }
-          h1 { font-size: 2rem; font-weight: 800; }
-          h2 { font-size: 1.5rem; font-weight: 700; }
-          h3 { font-size: 1.25rem; }
-          h4 { font-size: 1.125rem; }
-          h5, h6 { font-size: 1rem; }
-          p {
-            margin: 1em 0;
-            line-height: 1.6;
-            orphans: 3;
-            widows: 3;
-          }
-          a { color: #4a86ff; text-decoration: none; }
-          code {
-            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
-          }
-          @media print {
-            body { background: white; }
-            h1, h2, h3, h4, h5, h6 {
-              page-break-after: avoid !important;
-              break-after: avoid !important;
-              page-break-inside: avoid !important;
-              break-inside: avoid !important;
-            }
-            img, table, figure, pre, blockquote {
-              page-break-inside: avoid !important;
-              break-inside: avoid !important;
-            }
-          }
-        </style>
-      </head>
-      <body>
-        <div class="print-header">
-          <div class="print-logo">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4a86ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M3 3v18h18"></path>
-              <path d="M13 17V9"></path>
-              <path d="M18 17V5"></path>
-              <path d="M8 17v-3"></path>
-            </svg>
-            <span>CompetitivePulse</span>
-          </div>
-          <div class="print-date">Generated on ${generatedDate}</div>
-        </div>
-        ${bodyContent}
-      </body>
-      </html>
-    `;
-  };
-
-  const handleDownload = async (report: Report) => {
-    try {
-      setDownloadingPdf(true);
-      setError(null);
-      
-      const { data, error } = await supabase
-        .storage
-        .from('reports')
-        .download(report.storage_path);
-
-      if (error) {
-        throw error;
-      }
-
-      const content = await data.text();
-      const brandedContent = createBrandedTemplate(content, report.title, report.report_date, true);
-      
-      // Create a temporary container for the content
-      const container = document.createElement('div');
-      container.innerHTML = brandedContent;
-
-      // Add page breaks before h2 elements, excluding the first one
-      const h2Elements = container.querySelectorAll('h2');
-      h2Elements.forEach((h2, index) => {
-        if (index > 0) {
-          h2.style.pageBreakBefore = 'always';
-          h2.style.breakBefore = 'page';
-        }
-      });
-
-      document.body.appendChild(container);
-      
-      // Configure PDF options
-      const options = {
-        margin: [15, 15, 15, 15],
-        filename: `${report.title}-${report.report_date}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { 
-          scale: 2,
-          useCORS: true,
-          letterRendering: true
-        },
-        jsPDF: { 
-          unit: 'mm', 
-          format: 'a4', 
-          orientation: 'portrait',
-          compress: true
-        },
-        pagebreak: { 
-          mode: ['avoid-all', 'css', 'legacy'],
-          before: '.page-break-before',
-          after: '.page-break-after',
-          avoid: ['h1', 'h3', 'h4', 'h5', 'h6', 'img', 'table', 'figure', 'pre', 'blockquote']
-        }
-      };
-      
-      // Generate PDF
-      await html2pdf().from(container).set(options).save();
-      
-      // Clean up
-      document.body.removeChild(container);
-    } catch (err) {
-      console.error('Download error:', err);
-      setError('Failed to download report. Please try again.');
-    } finally {
-      setDownloadingPdf(false);
     }
   };
 
@@ -312,6 +128,75 @@ function Reports() {
       setError('Failed to create shareable link. Please try again.');
     } finally {
       setSharingReport(null);
+    }
+  };
+
+  const handleDownload = async (report: Report) => {
+    try {
+      setDownloadingPdf(true);
+      setError(null);
+      
+      const { data, error } = await supabase
+        .storage
+        .from('reports')
+        .download(report.storage_path);
+
+      if (error) {
+        throw error;
+      }
+
+      const content = await data.text();
+      const brandedContent = createBrandedTemplate(content, report.title, report.report_date, true);
+      
+      // Create a temporary container for the content
+      const container = document.createElement('div');
+      container.innerHTML = brandedContent;
+
+      // Add page breaks before h2 elements, excluding the first one
+      const h2Elements = container.querySelectorAll('h2');
+      h2Elements.forEach((h2, index) => {
+        if (index > 0) {
+          h2.style.pageBreakBefore = 'always';
+          h2.style.breakBefore = 'page';
+        }
+      });
+
+      document.body.appendChild(container);
+      
+      // Configure PDF options
+      const options = {
+        margin: [15, 15, 15, 15],
+        filename: `${report.title}-${report.report_date}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { 
+          scale: 2,
+          useCORS: true,
+          letterRendering: true
+        },
+        jsPDF: { 
+          unit: 'mm', 
+          format: 'a4', 
+          orientation: 'portrait',
+          compress: true
+        },
+        pagebreak: { 
+          mode: ['avoid-all', 'css', 'legacy'],
+          before: '.page-break-before',
+          after: '.page-break-after',
+          avoid: ['h1', 'h3', 'h4', 'h5', 'h6', 'img', 'table', 'figure', 'pre', 'blockquote']
+        }
+      };
+      
+      // Generate PDF
+      await html2pdf().from(container).set(options).save();
+      
+      // Clean up
+      document.body.removeChild(container);
+    } catch (err) {
+      console.error('Download error:', err);
+      setError('Failed to download report. Please try again.');
+    } finally {
+      setDownloadingPdf(false);
     }
   };
 

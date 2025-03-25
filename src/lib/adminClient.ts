@@ -2,8 +2,8 @@ import { createClient } from '@supabase/supabase-js';
 
 // Initialize Supabase admin client with service role key
 function getAdminClient() {
-  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-  const supabaseServiceKey = import.meta.env.VITE_SUPABASE_SERVICE_KEY;
+  const supabaseUrl = 'https://eicjcgvlvejsmtrffdgk.supabase.co';
+  const supabaseServiceKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVpY2pjZ3ZsdmVqc210cmZmZGdrIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0MDU3MDYyMCwiZXhwIjoyMDU2MTQ2NjIwfQ.NAsFwIcCMcAHDD9nWJXvzM4-x83DyYih8WpD_jrePzw';
 
   if (!supabaseUrl || !supabaseServiceKey) {
     // Only throw if we're on an admin page
